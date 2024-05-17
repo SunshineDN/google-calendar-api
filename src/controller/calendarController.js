@@ -36,10 +36,11 @@ class CalendarController {
           }
           const events = result.data.items;
           if (events.length) {
-            console.log('\nEventos encontrados:');
+            let string = '';
+            string += 'Eventos encontrados:\n';
             events.map((event, i) => {
-              const start = new Date(event.start.dateTime) || new Date(event.start.date);
-              console.log(`${start} - ${event.summary}`);
+              const start = new Date(event.start.dateTime).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+              string += `${start} - ${event.summary}\n`;
               // Calculo para pegar a duracao do evento
               const startDate = new Date(event.start.dateTime);
               const endDate = new Date(event.end.dateTime);
@@ -47,9 +48,10 @@ class CalendarController {
               if (duration >= 60) {
                 duration = `${Math.floor(duration / 60)}h${duration % 60}m`;
               }
-              console.log(`Duração: ${duration} minutos\n`);
+              string += `Duração: ${duration} minutos\n\n`;
             });
-            res.json(events);
+            console.log(string);
+            res.send(string);
           } else {
             res.json({ message: 'Nenhum evento encontrado.' });
           }
@@ -61,10 +63,22 @@ class CalendarController {
   async addEvent(req, res) {
     console.log('Adicionando evento...');
     console.log(req.body);
-    const { summary, description, start } = req.body;
+    const { summary, description, start, ...rest } = req.body;
     const startDateTime = parse(start, 'dd/MM/yyyy HH:mm', new Date());
     let endDateTime = new Date(startDateTime);
     endDateTime.setHours(endDateTime.getHours() + 1);
+
+    const event = {
+      summary,
+      description,
+      start: {
+        dateTime: startDateTime.toISOString(),
+      },
+      end: {
+        dateTime: endDateTime.toISOString(),
+      },
+      ...rest,
+    }
 
     auth.authorize((err) => {
       if (err) {
@@ -75,16 +89,7 @@ class CalendarController {
       calendar.events.insert(
         {
           calendarId: 'clinicadentalsante@gmail.com',
-          resource: {
-            summary,
-            description,
-            start: {
-              dateTime: startDateTime.toISOString(),
-            },
-            end: {
-              dateTime: endDateTime.toISOString(),
-            },
-          },
+          resource: event,
         },
         (err, result) => {
           if (err) {
