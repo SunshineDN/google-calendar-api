@@ -1,0 +1,18 @@
+version: '3'
+services:
+  calendar_api:
+    build: .
+    command: "npm run start"
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3002"
+    ports:
+      - "3002:3002"
+    networks:
+      - ai-atende-network
+
+networks:
+  ai-atende-network:
+    external: true
